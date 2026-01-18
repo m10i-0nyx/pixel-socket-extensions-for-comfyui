@@ -176,7 +176,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     max=0xffffffffffffffff,
                     step=1,
                     optional=True,
-                    multiline=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Int.Input("width",
@@ -185,7 +184,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     max=8192,
                     step=8,
                     optional=True,
-                    multiline=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Int.Input("height",
@@ -194,7 +192,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     max=8192,
                     step=8,
                     optional=True,
-                    multiline=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Int.Input("step",
@@ -203,7 +200,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     max=100,
                     step=1,
                     optional=True,
-                    multiline=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Float.Input("cfg",
@@ -212,17 +208,15 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     max=100.0,
                     step=0.1,
                     optional=True,
-                    multiline=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
             ],
             outputs=[
-                comfy_api_io.Image.Output()
             ]
         )
 
     @classmethod
-    def execute(cls, image: torch.Tensor, websocket_url, file_format, secret_token, request_job_id, **kwargs) -> comfy_api_io.NodeOutput:
+    def execute(cls, image: torch.Tensor, websocket_url, file_format, secret_token, request_job_id, **kwargs) -> None:
         try:
             epoch_time:int = int(time.time() * 1000)
 
@@ -263,8 +257,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
         except Exception:
             import traceback
             traceback.print_exc()
-
-        return comfy_api_io.NodeOutput()
 
 class PixelSocketExtensions(ComfyExtension):
     async def get_node_list(self) -> list[type[comfy_api_io.ComfyNode]]:
