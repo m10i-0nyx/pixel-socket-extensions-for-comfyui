@@ -1,6 +1,7 @@
 boto3
 msgpack-python
 numpy
+piexif
 pillow
 websocket-client
 zstd

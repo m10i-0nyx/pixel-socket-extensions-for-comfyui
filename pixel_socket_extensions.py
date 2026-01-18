@@ -1,7 +1,9 @@
 from typing import Any
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
+import piexif
+import piexif.helper
 from comfy_api.latest import ComfyExtension, io as comfy_api_io # pyright: ignore[reportMissingImports]
-import base64
 import io
 import json
 import numpy as np
@@ -126,7 +128,18 @@ class PixelSocketPutObjectStorageNode(comfy_api_io.ComfyNode):
         try:
             epoch_time:int = int(time.time() * 1000)
 
-            img_bytes = PixelSocketExtensions.tensor_to_image_bytes(image, file_format)
+            metadata: dict[str, str|int|float] = {
+                "checkpoint_name": checkpoint_name,
+                "positive_prompt": positive_prompt,
+                "negative_prompt": negative_prompt,
+                "seed_value": seed_value,
+                "width": width,
+                "height": height,
+                "step": step,
+                "cfg": cfg,
+            }
+
+            img_bytes = PixelSocketExtensions.tensor_to_image_bytes(image, file_format, metadata)
             img_size = len(img_bytes)
 
             s3_client = boto3.client(
@@ -281,10 +294,20 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                 cfg: float,
                 **kwargs) -> None:
         try:
-            print(kwargs)  # For debugging purposes
             epoch_time:int = int(time.time() * 1000)
 
-            img_bytes = PixelSocketExtensions.tensor_to_image_bytes(image, file_format)
+            metadata: dict[str, str|int|float] = {
+                "checkpoint_name": checkpoint_name,
+                "positive_prompt": positive_prompt,
+                "negative_prompt": negative_prompt,
+                "seed_value": seed_value,
+                "width": width,
+                "height": height,
+                "step": step,
+                "cfg": cfg,
+            }
+
+            img_bytes = PixelSocketExtensions.tensor_to_image_bytes(image, file_format, metadata)
             img_size = len(img_bytes)
 
             # Create payload
@@ -329,7 +352,7 @@ class PixelSocketExtensions(ComfyExtension):
         return [PixelSocketPutObjectStorageNode, PixelSocketDeliveryImageNode]
 
     @classmethod
-    def tensor_to_image_bytes(cls, image: torch.Tensor, file_format: str) -> bytes:
+    def tensor_to_image_bytes(cls, image: torch.Tensor, file_format: str, metadata: dict[str, str|int|float]) -> bytes:
         arr = image.detach().cpu().numpy()
 
         # 余分な次元を削除
@@ -347,11 +370,22 @@ class PixelSocketExtensions(ComfyExtension):
 
         buf = io.BytesIO()
         if file_format.lower() == "png":
-            img.save(buf, format="PNG")
+            pnginfo = PngInfo()
+            for key, value in metadata.items():
+                pnginfo.add_text(key, str(value))
+            pnginfo.add_text("json_format", json.dumps(metadata))
+
+            img.save(buf, format="PNG", pnginfo=pnginfo)
+
         elif file_format.lower() == "webp":
-            img.save(buf, format="WEBP", quality=90, method=6)
-        elif file_format.lower() in ("jpeg", "jpg"):
-            img.save(buf, format="JPEG", quality=90)
+            exif_bytes = piexif.dump({
+                "Exif": {
+                    #piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")
+                    piexif.ExifIFD.UserComment: json.dumps(metadata, ensure_ascii=True).encode("utf-8")
+                },
+            })
+            img.save(buf, format="WEBP", optimize=True, lossless=True, exif=exif_bytes)
+
         else:
             raise ValueError("Unsupported format")
 
