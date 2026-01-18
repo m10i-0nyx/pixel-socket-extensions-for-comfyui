@@ -116,8 +116,8 @@ class PixelSocketPutObjectStorageNode(comfy_api_io.ComfyNode):
                 secret_token: str,
                 request_job_id: str,
                 checkpoint_name: str,
-                positive_prompt: str,
-                negative_prompt: str,
+                positive_prompt,
+                negative_prompt,
                 seed_value: int,
                 width: int,
                 height: int,
@@ -130,8 +130,8 @@ class PixelSocketPutObjectStorageNode(comfy_api_io.ComfyNode):
 
             metadata: dict[str, str|int|float] = {
                 "checkpoint_name": checkpoint_name,
-                "positive_prompt": positive_prompt,
-                "negative_prompt": negative_prompt,
+                "positive_prompt": PixelSocketExtensions.json_safe(positive_prompt),
+                "negative_prompt": PixelSocketExtensions.json_safe(negative_prompt),
                 "seed_value": seed_value,
                 "width": width,
                 "height": height,
@@ -285,8 +285,8 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                 secret_token: str,
                 request_job_id: str,
                 checkpoint_name: str,
-                positive_prompt: str,
-                negative_prompt: str,
+                positive_prompt,
+                negative_prompt,
                 seed_value: int,
                 width: int,
                 height: int,
@@ -298,8 +298,8 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
 
             metadata: dict[str, str|int|float] = {
                 "checkpoint_name": checkpoint_name,
-                "positive_prompt": positive_prompt,
-                "negative_prompt": negative_prompt,
+                "positive_prompt": PixelSocketExtensions.json_safe(positive_prompt),
+                "negative_prompt": PixelSocketExtensions.json_safe(negative_prompt),
                 "seed_value": seed_value,
                 "width": width,
                 "height": height,
@@ -351,6 +351,15 @@ class PixelSocketExtensions(ComfyExtension):
     async def get_node_list(self) -> list[type[comfy_api_io.ComfyNode]]:
         return [PixelSocketPutObjectStorageNode, PixelSocketDeliveryImageNode]
 
+    @staticmethod
+    def json_safe(value):
+        if isinstance(value, torch.Tensor):
+            if value.numel() == 1:
+                return value.item()          # スカラーTensor
+            else:
+                return value.tolist()        # 配列Tensor
+        return value
+
     @classmethod
     def tensor_to_image_bytes(cls, image: torch.Tensor, file_format: str, metadata: dict[str, str|int|float]) -> bytes:
         arr = image.detach().cpu().numpy()
@@ -381,7 +390,7 @@ class PixelSocketExtensions(ComfyExtension):
             exif_bytes = piexif.dump({
                 "Exif": {
                     #piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")
-                    piexif.ExifIFD.UserComment: json.dumps(metadata, ensure_ascii=True)
+                    piexif.ExifIFD.UserComment: json.dumps(metadata, ensure_ascii=False)
                 },
             })
             img.save(buf, format="WEBP", optimize=True, lossless=True, exif=exif_bytes)
