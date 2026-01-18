@@ -23,7 +23,7 @@ class PixelSocketPutObjectStorageNode(comfy_api_io.ComfyNode):
             inputs=[
                 comfy_api_io.Image.Input("image"),
                 comfy_api_io.String.Input("websocket_url",
-                    default="wss://reflector.foundation0.link/ws/streaming",
+                    default="wss://example.foundation0.link/ws/streaming",
                     optional=False
                 ),
                 comfy_api_io.Combo.Input("file_format",
@@ -140,7 +140,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
             inputs=[
                 comfy_api_io.Image.Input("image"),
                 comfy_api_io.String.Input("websocket_url",
-                    default="wss://reflector.foundation0.link/ws/streaming",
+                    default="wss://example.foundation0.link/ws/streaming",
                     optional=False
                 ),
                 comfy_api_io.Combo.Input("file_format",
@@ -216,7 +216,9 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
             ],
-            outputs=[]
+            outputs=[
+                comfy_api_io.Image.Output()
+            ]
         )
 
     @classmethod
