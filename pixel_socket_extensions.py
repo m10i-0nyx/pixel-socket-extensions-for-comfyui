@@ -28,7 +28,7 @@ class PixelSocketPutObjectStorageNode(comfy_api_io.ComfyNode):
                     optional=False
                 ),
                 comfy_api_io.Combo.Input("file_format",
-                    options=["WEBP", "PNG", "JPEG"],
+                    options=["WEBP", "PNG"],
                     default="WEBP"
                 ),
                 comfy_api_io.String.Input("endpoint_url",
@@ -55,12 +55,74 @@ class PixelSocketPutObjectStorageNode(comfy_api_io.ComfyNode):
                     default="<REQUEST_JOB_ID>",
                     optional=False
                 ),
+                comfy_api_io.Model.Input("checkpoint_name"),
+                comfy_api_io.Conditioning.Input("positive_prompt"),
+                comfy_api_io.Conditioning.Input("negative_prompt"),
+                comfy_api_io.Int.Input("seed_value",
+                    default=0,
+                    min=0,
+                    max=0xffffffffffffffff,
+                    step=1,
+                    optional=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Int.Input("width",
+                    default=512,
+                    min=1,
+                    max=8192,
+                    step=8,
+                    optional=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Int.Input("height",
+                    default=512,
+                    min=1,
+                    max=8192,
+                    step=8,
+                    optional=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Int.Input("step",
+                    default=20,
+                    min=1,
+                    max=100,
+                    step=1,
+                    optional=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Float.Input("cfg",
+                    default=8.0,
+                    min=0.0,
+                    max=100.0,
+                    step=0.1,
+                    optional=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
             ],
             outputs=[]
         )
 
     @classmethod
-    def execute(cls, image, file_format, websocket_url, endpoint_url, bucket_name, aws_access_key_id, aws_secret_access_key, secret_token, request_job_id, **kwargs) -> comfy_api_io.NodeOutput:
+    def execute(cls,
+                image: torch.Tensor,
+                file_format: str,
+                websocket_url: str,
+                endpoint_url: str,
+                bucket_name: str,
+                aws_access_key_id: str,
+                aws_secret_access_key: str,
+                secret_token: str,
+                request_job_id: str,
+                checkpoint_name: str,
+                positive_prompt: str,
+                negative_prompt: str,
+                seed_value: int,
+                width: int,
+                height: int,
+                step: int,
+                cfg: float,
+                **kwargs
+                ) -> comfy_api_io.NodeOutput:
         try:
             epoch_time:int = int(time.time() * 1000)
 
@@ -139,13 +201,13 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
             is_output_node=True,
             inputs=[
                 comfy_api_io.Image.Input("image"),
+                comfy_api_io.Combo.Input("file_format",
+                    options=["WEBP", "PNG"],
+                    default="WEBP"
+                ),
                 comfy_api_io.String.Input("websocket_url",
                     default="wss://example.foundation0.link/ws/streaming",
                     optional=False
-                ),
-                comfy_api_io.Combo.Input("file_format",
-                    options=["WEBP", "PNG", "JPEG"],
-                    default="WEBP"
                 ),
                 comfy_api_io.String.Input("secret_token",
                     default="generate_random_token",
@@ -155,11 +217,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     default="<REQUEST_JOB_ID>",
                     optional=False
                 ),
-                comfy_api_io.String.Input("checkpoint_name",
-                    default="",
-                    optional=True,
-                    multiline=False
-                ),
+                comfy_api_io.Model.Input("checkpoint_name"),
                 comfy_api_io.Conditioning.Input("positive_prompt"),
                 comfy_api_io.Conditioning.Input("negative_prompt"),
                 comfy_api_io.Int.Input("seed_value",
@@ -167,7 +225,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     min=0,
                     max=0xffffffffffffffff,
                     step=1,
-                    optional=True,
+                    optional=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Int.Input("width",
@@ -175,7 +233,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     min=1,
                     max=8192,
                     step=8,
-                    optional=True,
+                    optional=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Int.Input("height",
@@ -183,7 +241,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     min=1,
                     max=8192,
                     step=8,
-                    optional=True,
+                    optional=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Int.Input("step",
@@ -191,7 +249,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     min=1,
                     max=100,
                     step=1,
-                    optional=True,
+                    optional=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
                 comfy_api_io.Float.Input("cfg",
@@ -199,7 +257,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     min=0.0,
                     max=100.0,
                     step=0.1,
-                    optional=True,
+                    optional=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
             ],
@@ -207,8 +265,23 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, image: torch.Tensor, websocket_url, file_format, secret_token, request_job_id, **kwargs) -> None:
+    def execute(cls,
+                image: torch.Tensor,
+                file_format: str,
+                websocket_url: str,
+                secret_token: str,
+                request_job_id: str,
+                checkpoint_name: str,
+                positive_prompt: str,
+                negative_prompt: str,
+                seed_value: int,
+                width: int,
+                height: int,
+                step: int,
+                cfg: float,
+                **kwargs) -> None:
         try:
+            print(kwargs)  # For debugging purposes
             epoch_time:int = int(time.time() * 1000)
 
             img_bytes = PixelSocketExtensions.tensor_to_image_bytes(image, file_format)
