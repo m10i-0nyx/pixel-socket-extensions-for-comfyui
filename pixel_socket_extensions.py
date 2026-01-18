@@ -155,10 +155,68 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     default="<REQUEST_JOB_ID>",
                     optional=False
                 ),
+                comfy_api_io.String.Input("checkpoint_name",
+                    default="",
+                    optional=True,
+                    multiline=False
+                ),
+                comfy_api_io.String.Input("positive_prompt",
+                    default="",
+                    optional=True,
+                    multiline=True
+                ),
+                comfy_api_io.String.Input("negative_prompt",
+                    default="",
+                    optional=True,
+                    multiline=True
+                ),
+                comfy_api_io.Int.Input("seed_value",
+                    default=0,
+                    min=0,
+                    max=0xffffffffffffffff,
+                    step=1,
+                    optional=True,
+                    multiline=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Int.Input("width",
+                    default=512,
+                    min=1,
+                    max=8192,
+                    step=8,
+                    optional=True,
+                    multiline=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Int.Input("height",
+                    default=512,
+                    min=1,
+                    max=8192,
+                    step=8,
+                    optional=True,
+                    multiline=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Int.Input("step",
+                    default=20,
+                    min=1,
+                    max=100,
+                    step=1,
+                    optional=True,
+                    multiline=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
+                comfy_api_io.Float.Input("cfg",
+                    default=8.0,
+                    min=0.0,
+                    max=100.0,
+                    step=0.1,
+                    optional=True,
+                    multiline=False,
+                    display_mode=comfy_api_io.NumberDisplay.number
+                ),
             ],
-            outputs=[
-                comfy_api_io.Image.Output()
-            ]
+            outputs=[]
         )
 
     @classmethod
@@ -204,7 +262,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
             import traceback
             traceback.print_exc()
 
-        return comfy_api_io.NodeOutput(image)
+        return comfy_api_io.NodeOutput()
 
 class PixelSocketExtensions(ComfyExtension):
     async def get_node_list(self) -> list[type[comfy_api_io.ComfyNode]]:
