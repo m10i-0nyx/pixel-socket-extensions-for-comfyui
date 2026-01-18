@@ -381,7 +381,7 @@ class PixelSocketExtensions(ComfyExtension):
             exif_bytes = piexif.dump({
                 "Exif": {
                     #piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")
-                    piexif.ExifIFD.UserComment: json.dumps(metadata, ensure_ascii=True).encode("utf-8")
+                    piexif.ExifIFD.UserComment: json.dumps(metadata, ensure_ascii=True)
                 },
             })
             img.save(buf, format="WEBP", optimize=True, lossless=True, exif=exif_bytes)
