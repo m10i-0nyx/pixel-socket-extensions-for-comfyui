@@ -4,3 +4,4 @@ piexif
 pillow
 websocket-client
 zstd
+pyoxipng

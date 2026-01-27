@@ -8,6 +8,7 @@ import json
 import numpy as np
 import time
 import websocket
+import oxipng
 
 import torch # pyright: ignore[reportMissingImports]
 import msgpack
@@ -194,6 +195,10 @@ class PixelSocketExtensions(ComfyExtension):
             pnginfo.add_text("json_format", json.dumps(metadata, ensure_ascii=True))
 
             img.save(buf, format="PNG", pnginfo=pnginfo)
+
+            # Optimize PNG using oxipng
+            buf.seek(0)
+            buf = io.BytesIO(oxipng.optimize_from_memory(buf.getvalue()))
 
         elif file_format.lower() == "webp":
             exif_bytes = piexif.dump({
