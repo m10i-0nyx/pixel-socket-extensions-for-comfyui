@@ -200,7 +200,6 @@ class PixelSocketExtensions(ComfyExtension):
             pnginfo = PngInfo()
             for key, value in metadata.items():
                 pnginfo.add_text(key, str(value))
-            pnginfo.add_text("json_format", json.dumps(metadata, ensure_ascii=True))
 
             img.save(buf, format="PNG", pnginfo=pnginfo)
 
