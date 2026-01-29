@@ -15,6 +15,7 @@ from comfy_api.latest import ComfyExtension, io as comfy_api_io # pyright: ignor
 import torch # pyright: ignore[reportMissingImports]
 import msgpack
 import zstd
+import httpx
 
 class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
     @classmethod
@@ -177,18 +178,18 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
 
         return comfy_api_io.NodeOutput(image)
 
-class PixelSocketLoadImageFromBase64Node(comfy_api_io.ComfyNode):
+class PixelSocketLoadImageFromUrlNode(comfy_api_io.ComfyNode):
     @classmethod
     def define_schema(cls) -> comfy_api_io.Schema:
         return comfy_api_io.Schema(
-            node_id="PixelSocketLoadImageFromBase64Node",
-            display_name="Load Image From Base64 Node",
+            node_id="PixelSocketLoadImageFromUrlNode",
+            display_name="Load Image From URL Node",
             category="PixelSocket",
             is_output_node=True,
             inputs=[
-                comfy_api_io.String.Input("image_base64",
+                comfy_api_io.String.Input("image_url",
                     default="",
-                    multiline=True,
+                    multiline=False,
                     optional=False
                 ),
             ],
@@ -199,105 +200,40 @@ class PixelSocketLoadImageFromBase64Node(comfy_api_io.ComfyNode):
             ]
         )
 
-    @staticmethod
-    def _decode_base64(image_base64: str) -> bytes:
-        """Base64データをデコード"""
-        if not image_base64 or not isinstance(image_base64, str):
-            raise ValueError(f"Invalid base64 input: {type(image_base64)}")
-
-        # ホワイトスペースを削除してからデコード
-        image_base64 = image_base64.strip()
-
-        # パディングを自動的に追加（必要な場合）
-        missing_padding = len(image_base64) % 4
-        if missing_padding:
-            image_base64 += '=' * (4 - missing_padding)
-
-        try:
-            image_data = base64.b64decode(image_base64)
-        except Exception as e:
-            raise ValueError(f"Invalid base64 format: {e}")
-
-        if len(image_data) == 0:
-            raise ValueError("Decoded base64 data is empty")
-        return image_data
-
-    @staticmethod
-    def _load_image(image_data: bytes) -> Image.Image:
-        """バイナリデータから画像をロード"""
-        img = Image.open(io.BytesIO(image_data)).convert("RGB")
-        return img
-
-    @staticmethod
-    def _normalize_dimensions(img: Image.Image) -> tuple[Image.Image, int, int]:
-        """画像寸法をVAE互換にリサイズ"""
-        MIN_DIMENSION = 64
-        MULTIPLE_OF = 8
-
-        original_size = img.size
-        width, height = img.size
-        print(f"[PixelSocketLoadImageFromBase64Node] Original: {width}x{height}")
-
-        # 最小値チェック
-        if width < 4 or height < 4:
-            raise ValueError(f"Image too small: {width}x{height}. Minimum 4x4 required.")
-
-        # 最小寸法を確保
-        if width < MIN_DIMENSION or height < MIN_DIMENSION:
-            scale = max(MIN_DIMENSION / width, MIN_DIMENSION / height)
-            width, height = int(width * scale), int(height * scale)
-            img = img.resize((width, height), Image.Resampling.LANCZOS)
-            print(f"[PixelSocketLoadImageFromBase64Node] Upscaled to {width}x{height}")
-
-        # 8の倍数に丸める
-        width = ((width + 7) // MULTIPLE_OF) * MULTIPLE_OF
-        height = ((height + 7) // MULTIPLE_OF) * MULTIPLE_OF
-        width = max(width, MIN_DIMENSION)
-        height = max(height, MIN_DIMENSION)
-
-        # リサイズ
-        if img.size != (width, height):
-            img = img.resize((width, height), Image.Resampling.LANCZOS)
-            print(f"[PixelSocketLoadImageFromBase64Node] Resized to {width}x{height}")
-
-        return img, width, height
-
-    @staticmethod
-    def _image_to_tensor(img: Image.Image) -> torch.Tensor:
-        """画像をテンソルに変換"""
-        img_array = np.array(img).astype(np.float32) / 255.0
-        img_tensor = torch.from_numpy(img_array.transpose(2, 0, 1)).unsqueeze(0)
-        print(f"[PixelSocketLoadImageFromBase64Node] Tensor shape: {img_tensor.shape}")
-        return img_tensor
-
-    @staticmethod
-    def _create_fallback_image() -> torch.Tensor:
-        """フォールバック用の黒いテンソルを生成"""
-        default_img = Image.new("RGB", (512, 512), color=(0, 0, 0))
-        img_array = np.array(default_img).astype(np.float32) / 255.0
-        return torch.from_numpy(img_array.transpose(2, 0, 1)).unsqueeze(0)
-
     @classmethod
-    def execute(cls, image_base64: str, **kwargs) -> None:
+    def execute(cls, image_url: str, **kwargs) -> None:
         try:
-            image_data = cls._decode_base64(image_base64)
-            img = cls._load_image(image_data)
-            img, width, height = cls._normalize_dimensions(img)
-            img_tensor = cls._image_to_tensor(img)
+            img_data: bytes
+            if image_url.startswith("data:image/"):
+                header, encoded = image_url.split(",", 1)
+                img_data = base64.b64decode(encoded)
+
+            elif image_url.startswith("http://") or image_url.startswith("https://"):
+                response = httpx.get(image_url)
+                response.raise_for_status()
+                img_data = response.content
+            else:
+                raise ValueError("Invalid data URL")
+
+            img = Image.open(io.BytesIO(img_data)).convert("RGBA")
+            width, height = img.size
+            img_array = np.array(img).astype(np.float32) / 255.0
+            img_tensor = torch.from_numpy(img_array).unsqueeze(0)
+
             return comfy_api_io.NodeOutput(img_tensor, width, height)
 
-        except Exception as e:
-            print(f"[PixelSocketLoadImageFromBase64Node] ERROR: {e}")
+        except Exception as ex:
+            print(f"[PixelSocketLoadImageFromUrlNode] ERROR: {ex}")
             import traceback
             traceback.print_exc()
-            fallback_tensor = cls._create_fallback_image()
-            return comfy_api_io.NodeOutput(fallback_tensor, 512, 512)
+
+        return comfy_api_io.NodeOutput(None, 0, 0)
 
 class PixelSocketExtensions(ComfyExtension):
     async def get_node_list(self) -> list[type[comfy_api_io.ComfyNode]]:
         return [
                     PixelSocketDeliveryImageNode,
-                    PixelSocketLoadImageFromBase64Node
+                    PixelSocketLoadImageFromUrlNode
                ]
 
     @classmethod

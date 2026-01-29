@@ -5,3 +5,4 @@ pillow
 websocket-client
 zstd
 pyoxipng
+httpx
