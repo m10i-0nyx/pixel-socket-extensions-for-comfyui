@@ -1,16 +1,17 @@
 from typing import Any
-from PIL import Image
-from PIL.PngImagePlugin import PngInfo
-import piexif
-from comfy_api.latest import ComfyExtension, io as comfy_api_io # pyright: ignore[reportMissingImports]
+import base64
 import io
 import json
 import numpy as np
+import oxipng
+import piexif
 import time
 import websocket
-import oxipng
-import base64
 
+from PIL import Image
+from PIL.PngImagePlugin import PngInfo
+import comfy # pyright: ignore[reportMissingImports]
+from comfy_api.latest import ComfyExtension, io as comfy_api_io # pyright: ignore[reportMissingImports]
 import torch # pyright: ignore[reportMissingImports]
 import msgpack
 import zstd
@@ -132,6 +133,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                 "height": height,
                 "step": step,
                 "cfg": cfg,
+                "comfyui_version": getattr(comfy, "__version__", "unknown"),
             }
 
             img_bytes = PixelSocketExtensions.tensor_to_image_bytes(image, file_format, oxipng_level, metadata)
@@ -175,7 +177,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
 
         return comfy_api_io.NodeOutput(image)
 
-class PixelSocketLoadImageFromBase64Node(ComfyExtension):
+class PixelSocketLoadImageFromBase64Node(comfy_api_io.ComfyNode):
     @classmethod
     def define_schema(cls) -> comfy_api_io.Schema:
         return comfy_api_io.Schema(
@@ -197,6 +199,7 @@ class PixelSocketLoadImageFromBase64Node(ComfyExtension):
                 comfy_api_io.Int.Output("height"),
             ]
         )
+
     @classmethod
     def execute(cls,
                 image_base64: str,
