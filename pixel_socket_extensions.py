@@ -215,21 +215,24 @@ class PixelSocketLoadImageFromBase64Node(comfy_api_io.ComfyNode):
             # Convert to tensor
             img_array = np.array(img).astype(np.float32) / 255.0
 
-            # img_array shape is (H, W, C) from PIL
-            # Convert to (C, H, W) then add batch dimension (1, C, H, W)
-            if img_array.ndim == 3:
-                img_tensor = torch.from_numpy(img_array.transpose(2, 0, 1)).unsqueeze(0)
-            else:
-                img_tensor = torch.from_numpy(img_array).unsqueeze(0).unsqueeze(0)
-
+            # Extract alpha channel as mask before processing
             img_mask: torch.Tensor
-            # Extract alpha channel as mask
             if img.mode == "RGBA" and img_array.shape[2] == 4:
                 img_mask = img_array[:, :, 3]  # Alpha channel (H, W)
                 img_mask = torch.from_numpy(img_mask).unsqueeze(0)  # Add batch dimension (1, H, W)
             else:
                 # Create a full mask if no alpha channel
                 img_mask = torch.ones((1, img.height, img.width), dtype=torch.float32)
+
+            # img_array shape is (H, W, C) from PIL
+            # Convert to (1, C, H, W) format
+            if img_array.ndim == 3 and img_array.shape[2] == 4:
+                # For RGBA, use only RGB channels and convert
+                img_tensor = torch.from_numpy(img_array[:, :, :3].transpose(2, 0, 1)).unsqueeze(0)
+            elif img_array.ndim == 3:
+                img_tensor = torch.from_numpy(img_array.transpose(2, 0, 1)).unsqueeze(0)
+            else:
+                img_tensor = torch.from_numpy(img_array).unsqueeze(0).unsqueeze(0)
 
             width = img.width if img else None
             height = img.height if img else None
