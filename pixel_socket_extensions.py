@@ -274,11 +274,11 @@ class PixelSocketLoadImageFromUrlNode(comfy_api_io.ComfyNode):
             print(f"[PixelSocketLoadImageFromUrlNode] WARNING: Image verification failed: {e}")
             return False
 
-class PixelSocketResizeImage(comfy_api_io.ComfyNode):
+class PixelSocketResizeImageNode(comfy_api_io.ComfyNode):
     @classmethod
     def define_schema(cls) -> comfy_api_io.Schema:
         return comfy_api_io.Schema(
-            node_id="PixelSocketResizeImage",
+            node_id="PixelSocketResizeImageNode",
             display_name="Resize Image Node",
             category="PixelSocket",
             is_output_node=True,
@@ -334,7 +334,7 @@ class PixelSocketResizeImage(comfy_api_io.ComfyNode):
             return comfy_api_io.NodeOutput(img_tensor, width_output, height_output)
 
         except Exception as ex:
-            print(f"[PixelSocketResizeImage] ERROR: {ex}")
+            print(f"[PixelSocketResizeImageNode] ERROR: {ex}")
             import traceback
             traceback.print_exc()
 
@@ -344,7 +344,8 @@ class PixelSocketExtensions(ComfyExtension):
     async def get_node_list(self) -> list[type[comfy_api_io.ComfyNode]]:
         return [
                     PixelSocketDeliveryImageNode,
-                    PixelSocketLoadImageFromUrlNode
+                    PixelSocketLoadImageFromUrlNode,
+                    PixelSocketResizeImageNode,
                ]
 
     @classmethod
