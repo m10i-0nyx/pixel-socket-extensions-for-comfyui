@@ -78,7 +78,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     optional=False,
                     display_mode=comfy_api_io.NumberDisplay.number
                 ),
-                comfy_api_io.Int.Input("step",
+                comfy_api_io.Int.Input("steps",
                     default=20,
                     min=1,
                     max=100,
@@ -118,7 +118,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                 seed_value: int,
                 width: int,
                 height: int,
-                step: int,
+                steps: int,
                 cfg: float,
                 oxipng_level: int = 0,
                 **kwargs) -> None:
@@ -132,7 +132,7 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                 "seedValue": seed_value,
                 "width": width,
                 "height": height,
-                "step": step,
+                "steps": steps,
                 "cfg": cfg,
                 "comfyuiVersion": getattr(comfy, "__version__", "unknown"),
             }
