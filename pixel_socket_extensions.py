@@ -9,10 +9,10 @@ import piexif
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 from comfy_api.latest import ComfyExtension, io as comfy_api_io # pyright: ignore[reportMissingImports]
-from pixel_socket_node_delivery import PixelSocketDeliveryImageNode
 import torch # pyright: ignore[reportMissingImports]
 import httpx
 
+from .pixel_socket_node_delivery import PixelSocketDeliveryImageNode
 
 class PixelSocketLoadImageFromUrlNode(comfy_api_io.ComfyNode):
     @classmethod

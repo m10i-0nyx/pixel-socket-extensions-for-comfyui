@@ -11,7 +11,6 @@ import zstd
 
 from .pixel_socket_extensions import PixelSocketExtensions
 
-
 class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
     @classmethod
     def define_schema(cls) -> comfy_api_io.Schema:
