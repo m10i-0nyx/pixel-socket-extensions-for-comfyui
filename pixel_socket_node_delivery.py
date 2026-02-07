@@ -36,57 +36,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     default="<REQUEST_JOB_ID>",
                     optional=False
                 ),
-                comfy_api_io.Model.Input("checkpoint_name"),
-                comfy_api_io.String.Input("positive_prompt",
-                    default="",
-                    multiline=True,
-                    optional=False
-                ),
-                comfy_api_io.String.Input("negative_prompt",
-                    default="",
-                    multiline=True,
-                    optional=False
-                ),
-                comfy_api_io.Int.Input("seed_value",
-                    default=0,
-                    min=0,
-                    max=0xffffffffffffffff,
-                    step=1,
-                    optional=False,
-                    display_mode=comfy_api_io.NumberDisplay.number
-                ),
-                comfy_api_io.Int.Input("width",
-                    default=512,
-                    min=1,
-                    max=8192,
-                    step=8,
-                    optional=False,
-                    display_mode=comfy_api_io.NumberDisplay.number
-                ),
-                comfy_api_io.Int.Input("height",
-                    default=512,
-                    min=1,
-                    max=8192,
-                    step=8,
-                    optional=False,
-                    display_mode=comfy_api_io.NumberDisplay.number
-                ),
-                comfy_api_io.Int.Input("steps",
-                    default=20,
-                    min=1,
-                    max=100,
-                    step=1,
-                    optional=False,
-                    display_mode=comfy_api_io.NumberDisplay.number
-                ),
-                comfy_api_io.Float.Input("cfg",
-                    default=8.0,
-                    min=0.0,
-                    max=100.0,
-                    step=0.1,
-                    optional=False,
-                    display_mode=comfy_api_io.NumberDisplay.number
-                ),
                 comfy_api_io.Int.Input("oxipng_level",
                     default=0,
                     min=0,
@@ -105,32 +54,12 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                 websocket_url: str,
                 secret_token: str,
                 request_job_id: str,
-                checkpoint_name: str,
-                positive_prompt: str,
-                negative_prompt: str,
-                seed_value: int,
-                width: int,
-                height: int,
-                steps: int,
-                cfg: float,
                 oxipng_level: int = 0,
                 **kwargs) -> None:
         try:
             epoch_time:int = int(time.time() * 1000)
 
-            metadata: dict[str, Any] = {
-                "checkpointName": checkpoint_name,
-                "positivePrompt": positive_prompt,
-                "negativePrompt": negative_prompt,
-                "seedValue": seed_value,
-                "width": width,
-                "height": height,
-                "steps": steps,
-                "cfg": cfg,
-                "comfyuiVersion": getattr(comfy, "__version__", "unknown"),
-            }
-
-            img_bytes = PixelSocketUtils.tensor_to_image_bytes(image, file_format, oxipng_level, metadata)
+            img_bytes = PixelSocketUtils.tensor_to_image_bytes(image, file_format, oxipng_level)
             img_size = len(img_bytes)
 
             # Create payload
@@ -145,7 +74,6 @@ class PixelSocketDeliveryImageNode(comfy_api_io.ComfyNode):
                     "objectUrl": None,
                     "secretToken": secret_token,
                     "timestamp": epoch_time,
-                    "promptParams": metadata
                 }
             }
             packed: bytes = msgpack.packb(payload, use_bin_type=True)
