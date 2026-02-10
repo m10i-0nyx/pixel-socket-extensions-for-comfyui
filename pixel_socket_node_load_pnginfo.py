@@ -110,11 +110,17 @@ class PixelSocketLoadImageInfoNode(comfy_api_io.ComfyNode):
             elif "uc" in comment_dict:
                 negative_prompt = comment_dict.get("uc", "")
 
-            del comment_dict["prompt"]
-            del comment_dict["negative_prompt"]
-            del comment_dict["uc"]
-            del comment_dict["v4_prompt"]
-            del comment_dict["v4_negative_prompt"]
+            # 不要なフィールドを削除
+            if "prompt" in comment_dict:
+                del comment_dict["prompt"]
+            if "negative_prompt" in comment_dict:
+                del comment_dict["negative_prompt"]
+            if "uc" in comment_dict:
+                del comment_dict["uc"]
+            if "v4_prompt" in comment_dict:
+                del comment_dict["v4_prompt"]
+            if "v4_negative_prompt" in comment_dict:
+                del comment_dict["v4_negative_prompt"]
 
             metadata_text = json.dumps(comment_dict, ensure_ascii=False)
 
