@@ -99,12 +99,12 @@ class PixelSocketLoadImageInfoNode(comfy_api_io.ComfyNode):
             comment_dict = json.loads(items.get("Comment", "{}"))
 
             if "v4_prompt" in comment_dict and "caption" in comment_dict["v4_prompt"]:
-                positive_prompt = comment_dict.get("base_caption", "")
+                positive_prompt = comment_dict["v4_prompt"]["caption"].get("base_caption", "")
             elif "prompt" in comment_dict:
                 positive_prompt = comment_dict.get("prompt", "")
 
-            if "v4_negative_prompt" in comment_dict and "caption" in comment_dict["v4_prompt"]:
-                negative_prompt = comment_dict.get("base_caption", "")
+            if "v4_negative_prompt" in comment_dict and "caption" in comment_dict["v4_negative_prompt"]:
+                negative_prompt = comment_dict["v4_negative_prompt"]["caption"].get("base_caption", "")
             elif "negative_prompt" in comment_dict:
                 negative_prompt = comment_dict.get("negative_prompt", "")
             elif "uc" in comment_dict:
