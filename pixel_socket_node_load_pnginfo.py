@@ -90,11 +90,36 @@ class PixelSocketLoadImageInfoNode(comfy_api_io.ComfyNode):
 
         image = Image.open(image_path)
 
-        geninfo: str = ""
         items = (image.info or {}).copy()
-        geninfo += items.pop("parameters", "")
+        positive_prompt: str = ""
+        negative_prompt: str = ""
+        metadata_text: str = ""
 
-        if "exif" in items:
+        if items.get("Software", None) == "NovelAI":
+            comment_dict = json.loads(items.get("Comment", "{}"))
+
+            if "v4_prompt" in comment_dict and "caption" in comment_dict["v4_prompt"]:
+                positive_prompt = comment_dict.get("base_caption", "")
+            elif "prompt" in comment_dict:
+                positive_prompt = comment_dict.get("prompt", "")
+
+            if "v4_negative_prompt" in comment_dict and "caption" in comment_dict["v4_prompt"]:
+                negative_prompt = comment_dict.get("base_caption", "")
+            elif "negative_prompt" in comment_dict:
+                negative_prompt = comment_dict.get("negative_prompt", "")
+            elif "uc" in comment_dict:
+                negative_prompt = comment_dict.get("uc", "")
+
+            del comment_dict["prompt"]
+            del comment_dict["negative_prompt"]
+            del comment_dict["uc"]
+            del comment_dict["v4_prompt"]
+            del comment_dict["v4_negative_prompt"]
+
+            metadata_text = json.dumps(comment_dict, ensure_ascii=False)
+
+        elif "exif" in items:
+            geninfo: str = ""
             exif_data = items["exif"]
             try:
                 exif = piexif.load(exif_data)
@@ -108,23 +133,23 @@ class PixelSocketLoadImageInfoNode(comfy_api_io.ComfyNode):
                 exif_comment = exif_comment.decode('utf8', errors="ignore")
 
             if exif_comment:
-                geninfo += exif_comment
+                geninfo = exif_comment
+            # geninfo をパース
+            (positive_prompt, negative_prompt, metadata_text) = parse_geninfo(geninfo or "")
 
         elif "comment" in items: # for gif
+            geninfo: str = ""
             if isinstance(items["comment"], bytes):
-                geninfo += items["comment"].decode('utf8', errors="ignore")
+                geninfo = items["comment"].decode('utf8', errors="ignore")
             else:
-                geninfo += items["comment"]
+                geninfo = items["comment"]
+            # geninfo をパース
+            (positive_prompt, negative_prompt, metadata_text) = parse_geninfo(geninfo or "")
 
-        if items.get("Software", None) == "NovelAI":
-            pass
-
-        # geninfo をパース
-        (positive_prompt, negative_prompt, metadata) = parse_geninfo(geninfo or "")
 
         # デバッグ/確認用に出力
         print(f"[PixelSocketLoadImageInfoNode] Positive Prompt: {positive_prompt}")
         print(f"[PixelSocketLoadImageInfoNode] Negative Prompt: {negative_prompt}")
-        print(f"[PixelSocketLoadImageInfoNode] Metadata: {metadata}")
+        print(f"[PixelSocketLoadImageInfoNode] Metadata: {metadata_text}")
 
-        return comfy_api_io.NodeOutput(positive_prompt, negative_prompt, metadata)
+        return comfy_api_io.NodeOutput(positive_prompt, negative_prompt, metadata_text)
