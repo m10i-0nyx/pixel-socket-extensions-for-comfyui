@@ -2,7 +2,7 @@
 [project]
 name = "pixel-socket-extensions-for-comfyui"
 description = "Pixel Socket Extensions for ComfyUI"
-version = "0.1.0"
+version = "0.1.1"
 license = { file = "LICENSE" }
 dependencies  = []
 
